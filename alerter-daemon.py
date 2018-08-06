@@ -50,10 +50,13 @@ def check_resp_data(data):
     Makes sure that the data returned from RESP API is as expected.
     '''
     if data is None:
+        logging.debug('response data is None')
         return None
     try:
+        logging.debug('read JSON')
         return jsloads(data.decode('utf-8'))
     except:
+        logging.debug('failed to load JSON')
         return None
 
 class checker_app():
@@ -67,12 +70,16 @@ class checker_app():
         pool - instance of urllib3.PoolManager
         feedurl - URL to query for new items (https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php)
         '''
+        logging.debug('requesting feed')
         resp = self.pool.request('GET', self.feedurl)
         if resp.status == 200:
+            logging.debug('request state 200')
             return check_resp_data(resp.data)
+        logging.debug('Failed request')
         return None
 
     def update(self):
+        logging.debug('Updating')
         data = self.get_feed()
         if data is None:
             return None
@@ -90,7 +97,7 @@ class checker_app():
                 continue
             self.events[props['time']].add(feat['id'])
             nNew += 1
-        logging.info('{} new features.'.format(nNew))
+        logging.debug('{} new features.'.format(nNew))
         
 
 def main(feedurl,interval,logfile,pidfile):
@@ -100,10 +107,9 @@ def main(feedurl,interval,logfile,pidfile):
                             pidfile=pidfile)
     app = checker_app(feedurl)
     delay = float(interval)
-    logging.info('Starting app')
+    logging.debug('Starting app')
     #with context:
     while True:
-        logging.info('Updating')
         app.update()
         sleep(delay)
 
