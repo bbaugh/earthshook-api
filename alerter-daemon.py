@@ -23,25 +23,11 @@ _usgs_url = r'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.
 parser = ArgumentParser(description='Creates a daemon for sending alerts.')
 
 
-parser.add_argument("--interval",\
-                    action="store", dest="interval", \
-                    default=60,\
-                    help="Number of seconds to wait between polls.")
-
-parser.add_argument("--pidfile",\
+parser.add_argument("--config",\
                     action="store", dest="pidfile", \
-                    default='/tmp/.alerter-daemon.lock',\
-                    help="Lock file for daemon.")
+                    default='earthshook-api.ini',\
+                    help="Config file for daemon.")
 
-parser.add_argument("--logfile",\
-                    action="store", dest="logfile", \
-                    default=devnull,\
-                    help="Log file for daemon.")
-                    
-parser.add_argument("--feedurl",\
-                    action="store", dest="feedurl", \
-                    default=_usgs_url,\
-                    help="USGS Feed URL.")
 
 args = parser.parse_args()
 
