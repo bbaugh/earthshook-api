@@ -66,7 +66,7 @@ class checkpointer():
                 features = inobj['features']
                 logging.debug('Loaded {} features from checkpoint.'.format(len(features)))
                 tweets = inobj['tweets']
-                logging.debug('Loaded {} features from checkpoint.'.format(len(tweets)))
+                logging.debug('Loaded {} tweets from checkpoint.'.format(len(tweets)))
 
             min_time = int((now - self.buffer_tdelta).timestamp()*1000)
             return last_modified,list(clean_features(min_time,features)), list(clean_tweets(min_time,tweets))

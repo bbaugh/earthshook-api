@@ -75,6 +75,8 @@ def main(configfile,loglevel):
     feed = feed_interface(config)
     twitter = twitter_interface(config)
     chckpnt = checkpointer(config)
+    feed.last_modified,feed.features,twitter.tweets = chckpnt.load_checkpoint()
+    
     delay = float(config['DEFAULT']['interval'])
     logging.debug('Starting app')
     #with context:
