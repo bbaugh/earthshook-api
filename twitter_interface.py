@@ -1,17 +1,5 @@
-from datetime import datetime, timedelta, timezone
 import logging
 import tweepy
-
-def get_props_summary(props,time_format):
-    '''
-    Creates standardized summary string from feature properties using given time_format(strftime)
-    '''
-    feat_time = datetime.fromtimestamp(props['time']/1000.,tz=timezone.utc)
-    return '{} occured at {}. {} {} located {}'.format(props['type'].capitalize(),\
-                         feat_time.strftime(time_format),\
-                         props['magType'],props['mag'],
-                         props['place'])
-
 
 class twitter_interface():
     def __init__(self,config):
@@ -26,47 +14,35 @@ class twitter_interface():
         self.tweets = list()
         self.twitter_id = 0
     
-    def seen(self,feature):
+    def seen(self,keydict):
         '''
         Returns True if feature with id and properties.updated the same has been seen
         '''
-        fid = feature['id']
-        fupdated = feature['properties']['updated']
         for f in self.tweets:
-            if f['id'] != fid:
-                continue
-            if f['updated'] != fupdated:
-                continue
-            return True
+            seen = True
+            for k,v in keydict.items():
+                if k not in f:
+                    raise ValueError('keydict contains items not see in tweets list')
+                if f[k] != v:
+                    seen = False
+                    break
+            if seen:
+                return True
         return False
     
-    def prop_sum(self,props):
-        '''
-        Creates standardized summary string from feature properties using given time_format(strftime)
-        '''
-        feat_time = datetime.fromtimestamp(props['time']/1000.,tz=timezone.utc)
-        return '{} occured at {}. {} {} located {}'.format(props['type'].capitalize(),\
-                             feat_time.strftime(self.time_format),\
-                             props['magType'],props['mag'],
-                             props['place'])
-    def process_feature(self,feature):
+    def tweet(self,tweet,keydict):
         logging.debug('processing feature')
-        if self.seen(feature):
+        if self.seen(keydict):
             logging.debug('already tweeted')
             return True
-        psum = self.prop_sum(feature['properties'])
-        logging.debug(psum)
-        flong, flat, fdepth = feature['geometry']['coordinates']
-        '''
-        stt = api.update_status(status=psum,\
-                                lat=float(flat),\
-                                long=float(flong))
-        loggin.debug(stt)
-        '''
-        self.tweets.append({'id' : feature['id'],\
-                            'time' : feature['properties']['time'],\
-                            'updated' : feature['properties']['updated'],\
-                            'twitter_id' : self.twitter_id })
+    
+        stt = self.api.update_status(**tweet)
+        logging.debug(stt)
+
+        archdict = {'twitter_id' : self.twitter_id}
+        for k,v in keydict.items():
+            archdict[k] = v
+        self.tweets.append(archdict.copy())
         self.twitter_id += 1
-        logging.debug('{} - {}'.format(feature['id'],self.twitter_id))
+        logging.debug('{} - {}'.format(tweet,self.twitter_id))
         return True

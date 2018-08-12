@@ -11,11 +11,13 @@ from os import path, devnull
 from argparse import ArgumentParser, FileType
 from configparser import ConfigParser
 from time import sleep
+from datetime import datetime, timedelta, timezone
 import logging
 from daemon import DaemonContext
+from daemon.pidfile import TimeoutPIDLockFile
 from getpass import getpass
 from checkpointer import checkpointer
-from feed_interface import feed_interface
+from feed_interface import feed_interface, feature2key
 from twitter_interface import twitter_interface
 
 _pathname = path.dirname(path.abspath(__file__))
@@ -23,7 +25,7 @@ _pathname = path.dirname(path.abspath(__file__))
 parser = ArgumentParser(description='Creates a daemon for sending alerts.')
 
 
-parser.add_argument('-c','--config',type=FileType('r'),\
+parser.add_argument('-c','--config',type=str,\
                     action="store", dest="config", \
                     default='earthshook-api.ini',\
                     help="Config file for daemon.")
@@ -41,6 +43,8 @@ _defaults['feedurl'] = r'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summa
 _defaults['interval'] = 60
 _defaults['pidfile'] = r'/tmp/.earthshook-api-daemon.lock'
 _defaults['logfile'] = devnull
+_defaults['time_format'] = '%%Y-%%m-%%dT%%H:%%M:%%S %%Z'
+
 _twitter_keys = [ 'api_key', 'api_secret', 'access_token','access_token_secret']
 def check_config(cfg):
     '''
@@ -58,20 +62,36 @@ def check_config(cfg):
             cfg['Twitter'][k] = getpass(prompt='Please provide {}: '.format(k))
     
 
+def get_summary(props,time_format):
+    '''
+    Creates standardized summary string from feature properties using given time_format(strftime)
+    '''
+    feat_time = datetime.fromtimestamp(props['time']/1000.,tz=timezone.utc)
+    return '{} {} {} occured at {} location: {} ({}) {}'.format(\
+        props['magType'].capitalize(),props['mag'],\
+        props['type'].capitalize(),\
+        feat_time.strftime(time_format),\
+        props['place'],\
+        props['status'],\
+        props['url'])
+                         
+def feature2tweet(feature,time_format):
+    '''
+    Constructs a dictionary to pass to tweepy.update_status from USGS GEOJson feature.
+    '''
+    logging.debug('processing feature to tweet')
+    tweetdict = {}
+    tweetdict['status'] = get_summary(feature['properties'],time_format)
+    flong, flat, fdepth = feature['geometry']['coordinates']
+    tweetdict['lat'] = float(flat)
+    tweetdict['long'] = float(flong)
+    return tweetdict
 
-def main(configfile,loglevel):
-    config = ConfigParser()
-    config.read_file(configfile)
-    check_config(config)
+def run(config,loglevel):
     logging.basicConfig(format='%(asctime)s %(message)s',\
                         filename=config['DEFAULT']['logfile'],\
                         level=loglevel)
-
-    logging.debug('creating daemon context')
-    context = DaemonContext(umask=0o002,
-                            files_preserve=[config['DEFAULT']['logfile']],
-                            pidfile=config['DEFAULT']['pidfile'])
-    logging.debug('initializing checker_app')
+    time_format = config['DEFAULT']['time_format']
     feed = feed_interface(config)
     twitter = twitter_interface(config)
     chckpnt = checkpointer(config)
@@ -79,16 +99,23 @@ def main(configfile,loglevel):
     
     delay = float(config['DEFAULT']['interval'])
     logging.debug('Starting app')
-    #with context:
-    #    while True:
-    for i in range(3):
+    while True:
         if feed.check_feed():
             if feed.update():
-                for feature in filter(lambda f: f['properties']['tweeted'] == False,feed.features):
-                    if twitter.process_feature(feature):
+                for feature in sorted(filter(lambda f: f['properties']['tweeted'] == False,feed.features),key=lambda f['properties']['time']):
+                    fkey = feature2key(feature)
+                    if twitter.tweet(feature2tweet(feature,time_format),fkey):
                         feature['properties']['tweeted'] = True
                 chckpnt.checkpoint(feed.last_modified,feed.features,twitter.tweets)
         sleep(delay)
+def main(configfile,loglevel):
+    config = ConfigParser()
+    config.read(configfile)
+    check_config(config)
+    with DaemonContext(umask=0o002,\
+                       pidfile=TimeoutPIDLockFile(config['DEFAULT']['pidfile'])) as context:
+        run(config,loglevel)
+        
 
 # Start daemon
 if __name__ == "__main__":

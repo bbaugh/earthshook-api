@@ -18,6 +18,12 @@ def check_resp_data(data):
         logging.debug('failed to load JSON')
         return None
 
+def feature2key(feature):
+    '''
+    Returns a unique key dict for the feature
+    '''
+    return { 'id' : feature['id'], 'time' : feature['properties']['time'], 'updated' : feature['properties']['updated'] }
+
 class feed_interface():
     def __init__(self,config):
         self.feedurl = config['DEFAULT']['feedurl']
@@ -58,7 +64,8 @@ class feed_interface():
                 return None,None
         logging.debug('Failed request')
         return None,None
-    
+
+        
     def seen(self,feature):
         '''
         Returns True if feature with id and properties.updated the same has been seen
