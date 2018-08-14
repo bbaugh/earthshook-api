@@ -67,12 +67,12 @@ def get_summary(props,time_format):
     Creates standardized summary string from feature properties using given time_format(strftime)
     '''
     feat_time = datetime.fromtimestamp(props['time']/1000.,tz=timezone.utc)
-    return '{} {} {} occured at {} location: {} ({}) {}'.format(\
+    return '{} {} {} ({}) occured at {}, {} {}'.format(\
         props['magType'].capitalize(),props['mag'],\
-        props['type'].capitalize(),\
+        props['type'],\
+        props['status'],\
         feat_time.strftime(time_format),\
         props['place'],\
-        props['status'],\
         props['url'])
                          
 def feature2tweet(feature,time_format):
@@ -102,7 +102,7 @@ def run(config,loglevel):
     while True:
         if feed.check_feed():
             if feed.update():
-                for feature in sorted(filter(lambda f: f['properties']['tweeted'] == False,feed.features),key=lambda f['properties']['time']):
+                for feature in sorted(filter(lambda f: f['properties']['tweeted'] == False,feed.features),key=lambda f: f['properties']['time'],reverse=True):
                     fkey = feature2key(feature)
                     if twitter.tweet(feature2tweet(feature,time_format),fkey):
                         feature['properties']['tweeted'] = True
