@@ -12,8 +12,7 @@ class twitter_interface():
         self.auth.set_access_token(self.access_token, self.access_token_secret)
         self.api = tweepy.API(self.auth)
         self.tweets = list()
-        self.twitter_id = 0
-    
+
     def seen(self,keydict):
         '''
         Returns True if feature with id and properties.updated the same has been seen
@@ -37,12 +36,10 @@ class twitter_interface():
             return True
     
         stt = self.api.update_status(**tweet)
-        logging.debug(stt)
-
-        archdict = {'twitter_id' : self.twitter_id}
+        tweet_id = stt.id
+        archdict = {'twitter_id' : tweet_id}
         for k,v in keydict.items():
             archdict[k] = v
         self.tweets.append(archdict.copy())
-        self.twitter_id += 1
-        logging.debug('{} - {}'.format(tweet,self.twitter_id))
+        logging.debug('{} - {}'.format(tweet,tweet_id))
         return True

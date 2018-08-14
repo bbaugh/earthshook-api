@@ -87,9 +87,18 @@ def feature2tweet(feature,time_format):
     tweetdict['long'] = float(flong)
     return tweetdict
 
+def clnd_and_sorted(features,time_format):
+    flt_func = lambda f: f['properties']['tweeted'] == False
+    srt_func = lambda f: f['properties']['time']
+    for feature in sorted(filter(flt_func,features),key=srt_func):
+        fkey = feature2key(feature)
+        fpld = feature2tweet(feature,time_format)
+        yield fkey,fpld, feature
+        
 def run(config,loglevel):
-    logging.basicConfig(format='%(asctime)s %(message)s',\
+    logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',\
                         filename=config['DEFAULT']['logfile'],\
+                        filemode='w',\
                         level=loglevel)
     time_format = config['DEFAULT']['time_format']
     feed = feed_interface(config)
@@ -102,9 +111,8 @@ def run(config,loglevel):
     while True:
         if feed.check_feed():
             if feed.update():
-                for feature in sorted(filter(lambda f: f['properties']['tweeted'] == False,feed.features),key=lambda f: f['properties']['time'],reverse=True):
-                    fkey = feature2key(feature)
-                    if twitter.tweet(feature2tweet(feature,time_format),fkey):
+                for fkey,fpld,feature in clnd_and_sorted(feed.features,time_format):
+                    if twitter.tweet(fpld,fkey):
                         feature['properties']['tweeted'] = True
                 chckpnt.checkpoint(feed.last_modified,feed.features,twitter.tweets)
         sleep(delay)
@@ -112,7 +120,16 @@ def main(configfile,loglevel):
     config = ConfigParser()
     config.read(configfile)
     check_config(config)
+    pfiles = []
+    serr = devnull
+    ferr = config['DEFAULT']['logfile']
+    if ferr.find('.log') != -1:
+        ferr = ferr.replace('.log','.err')
+        serr = open(ferr,'w')
+        pfiles.append(serr)
     with DaemonContext(umask=0o002,\
+                       files_preserve=pfiles,\
+                       stderr=serr,\
                        pidfile=TimeoutPIDLockFile(config['DEFAULT']['pidfile'])) as context:
         run(config,loglevel)
         

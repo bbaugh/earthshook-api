@@ -31,6 +31,7 @@ class checkpointer():
         else:
             pathlib.Path(self.checkpoint_dir).mkdir(parents=True, exist_ok=True)
         self.checkpoint_files = filenames
+        self.load_checkpoint()
 
     def checkpoint(self,last_modified,features,tweets):
         '''
