@@ -114,7 +114,7 @@ def run(config,loglevel):
                 for fkey,fpld,feature in clnd_and_sorted(feed.features,time_format):
                     if twitter.tweet(fpld,fkey):
                         feature['properties']['tweeted'] = True
-                chckpnt.checkpoint(feed.last_modified,feed.features,twitter.tweets)
+                feed.last_modified,feed.features,twitter.tweets = chckpnt.checkpoint(feed.last_modified,feed.features,twitter.tweets)
         sleep(delay)
 def main(configfile,loglevel):
     config = ConfigParser()

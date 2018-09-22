@@ -34,8 +34,15 @@ class twitter_interface():
         if self.seen(keydict):
             logging.debug('already tweeted')
             return True
-    
-        stt = self.api.update_status(**tweet)
+        try:
+            stt = self.api.update_status(**tweet)
+        except tweepy.error.TweepError as excpt:
+            logging.error(excpt)
+            if excpt.api_code == 187:
+                logging.error('{} - duplicated'.format(keydict))
+                return True
+            logging.error('{} - {}'.format(keydict,excpt.api_code))
+            return False
         tweet_id = stt.id
         archdict = {'twitter_id' : tweet_id}
         for k,v in keydict.items():

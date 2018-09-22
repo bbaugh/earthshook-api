@@ -22,7 +22,7 @@ def feature2key(feature):
     '''
     Returns a unique key dict for the feature
     '''
-    return { 'id' : feature['id'] } #, 'time' : feature['properties']['time'], 'updated' : feature['properties']['updated'] }
+    return { 'id' : feature['id'] , 'time' : feature['properties']['time'], 'updated' : feature['properties']['updated'] }
 
 class feed_interface():
     def __init__(self,config):
