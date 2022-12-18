@@ -1,5 +1,4 @@
 import logging
-import tweepy
 
 class twitter_interface():
     def __init__(self,config):
