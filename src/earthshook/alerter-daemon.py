@@ -104,7 +104,7 @@ def run(config,loglevel):
     feed = feed_interface(config)
     twitter = twitter_interface(config)
     chckpnt = checkpointer(config)
-    feed.last_modified,feed.features,twitter.tweets = chckpnt.load_checkpoint()
+    feed.last_modified,feed.features,twitter.posts = chckpnt.load_checkpoint()
     
     delay = float(config['DEFAULT']['interval'])
     logging.debug('Starting app')
@@ -114,7 +114,7 @@ def run(config,loglevel):
                 for fkey,fpld,feature in clnd_and_sorted(feed.features,time_format):
                     if twitter.tweet(fpld,fkey):
                         feature['properties']['tweeted'] = True
-                feed.last_modified,feed.features,twitter.tweets = chckpnt.checkpoint(feed.last_modified,feed.features,twitter.tweets)
+                feed.last_modified,feed.features,twitter.posts = chckpnt.checkpoint(feed.last_modified,feed.features,twitter.posts)
         sleep(delay)
 def main(configfile,loglevel):
     config = ConfigParser()

@@ -13,11 +13,11 @@ def clean_features(min_time,features):
     '''
     return (filter(lambda f: f['properties']['time'] > min_time,features))
 
-def clean_tweets(min_time,tweets):
+def clean_posts(min_time,posts):
     '''
-    Returns tweets newer than min_time
+    Returns posts newer than min_time
     '''
-    return (filter(lambda f: f['time'] > min_time,tweets))
+    return (filter(lambda f: f['time'] > min_time,posts))
 
 class checkpointer():
     def __init__(self,config):
@@ -33,7 +33,7 @@ class checkpointer():
         self.checkpoint_files = filenames
         self.load_checkpoint()
 
-    def checkpoint(self,last_modified,features,tweets):
+    def checkpoint(self,last_modified,features,posts):
         '''
         Saves current data to checkpoint.
         '''
@@ -44,13 +44,13 @@ class checkpointer():
 
         outobj = {'metadata' : { 'Last-Modified' : last_modified },\
                   'features' : list(clean_features(mon_beg,features)),\
-                  'tweets'   : list(clean_tweets(mon_beg,tweets)) }
+                  'posts'   : list(clean_posts(mon_beg,posts)) }
         with GzipFile(curfile, 'w') as fout:
             fout.write(jsdumps(outobj).encode('utf-8'))
         outobj = None
         
         min_time = int((now - self.buffer_tdelta).timestamp()*1000)
-        return last_modified,list(clean_features(min_time,features)), list(clean_tweets(min_time,tweets))
+        return last_modified,list(clean_features(min_time,features)), list(clean_posts(min_time,posts))
         
     def load_checkpoint(self):
         '''
@@ -66,9 +66,9 @@ class checkpointer():
                 logging.debug('Last-modified from checkpoint is {}'.format(last_modified))
                 features = inobj['features']
                 logging.debug('Loaded {} features from checkpoint.'.format(len(features)))
-                tweets = inobj['tweets']
-                logging.debug('Loaded {} tweets from checkpoint.'.format(len(tweets)))
+                posts = inobj['posts']
+                logging.debug('Loaded {} posts from checkpoint.'.format(len(posts)))
 
             min_time = int((now - self.buffer_tdelta).timestamp()*1000)
-            return last_modified,list(clean_features(min_time,features)), list(clean_tweets(min_time,tweets))
+            return last_modified,list(clean_features(min_time,features)), list(clean_posts(min_time,posts))
         return (now - timedelta(days=1)).timestamp(),list(),list()

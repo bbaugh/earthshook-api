@@ -1,7 +1,6 @@
 from dateutil import parser as dateparser
 from datetime import datetime, timezone, timedelta
 import logging
-from urllib3 import PoolManager
 from json import loads as jsloads
 
 def check_resp_data(data):
@@ -27,8 +26,6 @@ def feature2key(feature):
 class feed_interface():
     def __init__(self,config):
         self.feedurl = config['DEFAULT']['feedurl']
-        self.pool = PoolManager(cert_reqs='CERT_REQUIRED', \
-                                ca_certs='/etc/ssl/certs/ca-certificates.crt')
         self.features = list()
         self.last_modified = (datetime.now(timezone.utc) - timedelta(days=1)).timestamp()
 
@@ -37,7 +34,7 @@ class feed_interface():
         returns True if Last-Modified date is after previously seen value
         '''
         logging.debug('checking feed')
-        resp = self.pool.request('HEAD', self.feedurl)
+        resp = requests.head(self.feedurl)
         if resp.status == 200:
             logging.debug('head state 200')
             cur_last_mod =  dateparser.parse(resp.getheader('Last-Modified')).timestamp()
@@ -51,7 +48,7 @@ class feed_interface():
         simple wrapper that checks status of feed
         '''
         logging.debug('requesting feed')
-        resp = self.pool.request('GET', self.feedurl)
+        resp = requests.get(self.feedurl)
         if resp.status == 200:
             logging.debug('get state 200')
             if resp.data is None:

@@ -10,17 +10,17 @@ class twitter_interface():
         self.auth = tweepy.OAuthHandler(self.api_key, self.api_secret)
         self.auth.set_access_token(self.access_token, self.access_token_secret)
         self.api = tweepy.API(self.auth)
-        self.tweets = list()
+        self.posts = list()
 
     def seen(self,keydict):
         '''
         Returns True if feature with id and properties.updated the same has been seen
         '''
-        for f in self.tweets:
+        for f in self.posts:
             seen = True
             for k,v in keydict.items():
                 if k not in f:
-                    raise ValueError('keydict contains items not see in tweets list')
+                    raise ValueError('keydict contains items not see in posts list')
                 if f[k] != v:
                     seen = False
                     break
@@ -46,6 +46,6 @@ class twitter_interface():
         archdict = {'twitter_id' : tweet_id}
         for k,v in keydict.items():
             archdict[k] = v
-        self.tweets.append(archdict.copy())
+        self.posts.append(archdict.copy())
         logging.debug('{} - {}'.format(tweet,tweet_id))
         return True
