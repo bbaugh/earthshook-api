@@ -90,7 +90,7 @@ class feed_interface():
             if self.seen(feature):
                 nSeen += 1
                 continue
-            feature['properties']['tweeted'] = False
+            feature['properties']['posted'] = False
             self.features.append(feature)
             nNew += 1
         self.last_modified =  dateparser.parse(last_modified_str).timestamp()
